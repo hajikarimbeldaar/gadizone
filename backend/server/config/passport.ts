@@ -6,71 +6,70 @@ import { v4 as uuidv4 } from 'uuid';
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:5001';
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-// Configure Google OAuth Strategy
-passport.use(
-    new GoogleStrategy(
-        {
-            clientID: process.env.GOOGLE_CLIENT_ID as string,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-            callbackURL: `${backendUrl}/api/user/auth/google/callback`,
-            scope: ['profile', 'email']
-        },
-        async (accessToken, refreshToken, profile, done) => {
-            try {
-                // Extract user info from Google profile
-                const email = profile.emails?.[0]?.value;
-                const firstName = profile.name?.givenName || '';
-                const lastName = profile.name?.familyName || '';
-                const profileImage = profile.photos?.[0]?.value;
-                const googleId = profile.id;
+// Configure Google OAuth Strategy (only if credentials are set)
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    passport.use(
+        new GoogleStrategy(
+            {
+                clientID: process.env.GOOGLE_CLIENT_ID,
+                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                callbackURL: `${backendUrl}/api/user/auth/google/callback`,
+                scope: ['profile', 'email']
+            },
+            async (accessToken, refreshToken, profile, done) => {
+                try {
+                    const email = profile.emails?.[0]?.value;
+                    const firstName = profile.name?.givenName || '';
+                    const lastName = profile.name?.familyName || '';
+                    const profileImage = profile.photos?.[0]?.value;
+                    const googleId = profile.id;
 
-                if (!email) {
-                    return done(new Error('No email found in Google profile'), undefined);
-                }
-
-                // Check if user already exists
-                let user = await User.findOne({ email: email.toLowerCase() });
-
-                if (user) {
-                    // User exists - update Google ID if not set
-                    if (!user.googleId) {
-                        user.googleId = googleId;
-                        user.profileImage = profileImage || user.profileImage;
-                        await user.save();
+                    if (!email) {
+                        return done(new Error('No email found in Google profile'), undefined);
                     }
 
-                    // Update last login
-                    user.lastLogin = new Date();
-                    await user.save();
-                } else {
-                    // Create new user account
-                    const userId = uuidv4();
-                    user = new User({
-                        id: userId,
-                        email: email.toLowerCase(),
-                        password: null, // OAuth users don't have password
-                        firstName,
-                        lastName,
-                        googleId,
-                        profileImage,
-                        isEmailVerified: true, // Google emails are already verified
-                        isActive: true,
-                        createdAt: new Date(),
-                        updatedAt: new Date()
-                    });
+                    let user = await User.findOne({ email: email.toLowerCase() });
 
-                    await user.save();
-                    console.log('✅ New user created via Google OAuth:', email);
+                    if (user) {
+                        if (!user.googleId) {
+                            user.googleId = googleId;
+                            user.profileImage = profileImage || user.profileImage;
+                            await user.save();
+                        }
+                        user.lastLogin = new Date();
+                        await user.save();
+                    } else {
+                        const userId = uuidv4();
+                        user = new User({
+                            id: userId,
+                            email: email.toLowerCase(),
+                            password: null,
+                            firstName,
+                            lastName,
+                            googleId,
+                            profileImage,
+                            isEmailVerified: true,
+                            isActive: true,
+                            createdAt: new Date(),
+                            updatedAt: new Date()
+                        });
+                        await user.save();
+                        console.log('✅ New user created via Google OAuth:', email);
+                    }
+
+                    return done(null, user);
+                } catch (error) {
+                    console.error('Google OAuth error:', error);
+                    return done(error as Error, undefined);
                 }
-
-                return done(null, user);
-            } catch (error) {
-                console.error('Google OAuth error:', error);
-                return done(error as Error, undefined);
             }
-        }
-    )
-);
+        )
+    );
+    console.log('✅ Google OAuth strategy configured');
+} else {
+    console.warn('⚠️  Google OAuth not configured (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET missing)');
+}
+
 
 // Serialize user for session
 passport.serializeUser((user: any, done) => {
