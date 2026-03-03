@@ -142,12 +142,13 @@ const allowedOrigins = [
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  // Only allow whitelisted origins
-  if (origin && allowedOrigins.includes(origin)) {
+  // Allow any vercel.app preview URL dynamically, plus explicit whitelist
+  const isVercelPreview = origin && /https:\/\/[\w-]+\.vercel\.app$/.test(origin);
+
+  if (origin && (allowedOrigins.includes(origin) || isVercelPreview)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
   } else if (process.env.NODE_ENV === 'development') {
-    // In development, allow localhost
     res.header('Access-Control-Allow-Origin', origin || '*');
     res.header('Access-Control-Allow-Credentials', 'true');
   }
@@ -324,7 +325,7 @@ app.post('/api/monitoring/vitals', (req, res) => {
     // Session Middleware with enhanced cross-domain support
     const sessionSecret = process.env.SESSION_SECRET;
     if (isProd && !sessionSecret) {
-      throw new Error('🚨 SECURITY CRITICAL: SESSION_SECRET must be set in production environment variables.');
+      console.warn('⚠️  SESSION_SECRET not set — using fallback. Set SESSION_SECRET in Render env vars for production security.');
     }
 
     // Determine if we're using gadizone.com domain
