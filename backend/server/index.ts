@@ -128,6 +128,8 @@ const allowedOrigins = [
   'https://gadizone.com',
   'https://www.gadizone.com',
   'https://admin.gadizone.com',
+  'https://gadizone.vercel.app',
+  'https://gadizone-git-main-hajikarimbeldaar.vercel.app',
   'https://killer-whale101.vercel.app',
   'https://killer-whale.onrender.com',
   'http://localhost:3000',
@@ -135,6 +137,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.NEXT_PUBLIC_API_URL
 ].filter(Boolean);
+
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
