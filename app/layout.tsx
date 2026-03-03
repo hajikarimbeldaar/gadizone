@@ -8,7 +8,6 @@ import { AuthProvider } from '@/lib/auth-context'
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider'
 import { WebVitalsReporter } from '@/components/WebVitalsReporter'
 import { CartProvider } from './context/CartContext'
-import CookieConsent from '@/components/CookieConsent'
 import FloatingWhatsApp from '@/components/FloatingWhatsApp'
 import Footer from '@/components/Footer'
 import PageTransition from '@/components/animations/PageTransition'
@@ -277,7 +276,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 <Header />
                 {children}
                 <Footer />
-                <CookieConsent />
                 <FloatingWhatsApp />
               </CartProvider>
             </FavouritesProvider>
